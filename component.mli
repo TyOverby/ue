@@ -1,1 +1,1 @@
-type ('result, 'action, 'model, 'state) t 
+type ('result, 'action, 'model) t 

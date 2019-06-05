@@ -1,9 +1,9 @@
-type ('result, 'action, 'model, 'state) t
+type ('result, 'action, 'model) t
 
-val apply_action: ('result, 'action, 'model, 'state) t -> 'action -> 'state -> schedule_action:('action -> unit) -> 'model
-val result: ('result, 'action, 'model, 'state) t -> 'result
+val apply_action: ('result, 'action, 'model) t -> 'action ->  schedule_action:('action -> unit) -> 'model
+val result: ('result, 'action, 'model) t -> 'result
 
 val create 
     :  result:'result
-    -> apply_action: ('action -> 'state -> schedule_action:('action -> unit) -> 'model)
-    -> ('result, 'action, 'model, 'state)t
+    -> apply_action: ('action -> schedule_action:('action -> unit) -> 'model)
+    -> ('result, 'action, 'model) t
