@@ -1,5 +1,5 @@
 (library
  (name ue)
- (libraries base incremental virtual_dom)
+ (libraries base incremental)
  (js_of_ocaml)
  (preprocess (pps ppx_jane)))
