@@ -11,7 +11,9 @@ type node_creator
   -> t
 
 let verify_attributes attributes =
-    Array.to_list attributes
+    Array.to_list attributes 
+    |> List.map ~f:Attr.Internal.to_internal_attr
+
 
 let create_node node_name : node_creator = fun ?key ?attrs children  ->
     let attr_list = match attrs with 
@@ -27,3 +29,7 @@ let span = create_node "span"
 let button = create_node "button"
 let span_text t = V.Node.span [] [V.Node.text t]
 let text = V.Node.text 
+
+module Internal = struct 
+  let to_internal_node = Fn.id
+end

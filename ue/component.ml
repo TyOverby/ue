@@ -1,5 +1,4 @@
 open! Core_kernel
-open! Import
 
 open Incr.Let_syntax
 

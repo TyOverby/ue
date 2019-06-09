@@ -14,3 +14,7 @@ val span: node_creator
 val button: node_creator
 val span_text: string -> t
 val text: string -> t
+
+module Internal : sig
+  val to_internal_node : t -> Virtual_dom.Vdom.Node.t
+end

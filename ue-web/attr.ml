@@ -1,3 +1,4 @@
+open! Core_kernel
 open! Import
 
 module V = Virtual_dom.Vdom
@@ -18,3 +19,7 @@ let on name handler =
     V.Attr.property name f
 
 let on_click = on "click"
+
+module Internal = struct 
+  let to_internal_attr = Fn.id
+end
