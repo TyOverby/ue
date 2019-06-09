@@ -1,6 +1,5 @@
 open! Core_kernel
 
-
 type ('result, 'action, 'model) t 
 
 val eval 
@@ -10,7 +9,7 @@ val eval
   -> ('result, 'action, 'model) t 
   -> ('result, 'action, 'model) Snapshot.t Incr.t 
 
-val return : 'result -> ('result, Nothing.t, _) t
+val of_constant: 'result -> ('result, Nothing.t, _) t
 
 val of_model_map
   :  f:('model -> 'result) 
@@ -32,6 +31,23 @@ val map
   -> f:('r1 -> 'r2)
   -> ('r2, 'action, 'model) t
 
+module Leaf_component: sig
+  module type S = sig 
+    type model
+    type action
+    type result
+    val apply_action: schedule_action:(action -> unit) -> model -> action -> model
+    val view: model -> inject:(action -> Event.t) -> result
+  end
+
+  type ('result, 'action, 'model) t = 
+      (module S
+       with type model = 'model 
+       and type action = 'action 
+       and type result = 'result)
+end
+
+val of_leaf_component: ('result, 'action, 'model) Leaf_component.t -> ('result, 'action, 'model) t
 
 module Different_model : sig 
   module Let_syntax : sig 

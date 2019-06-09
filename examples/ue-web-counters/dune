@@ -1,0 +1,9 @@
+(executable
+ (name counters)
+ (libraries ue ue_web)
+ (js_of_ocaml)
+ (preprocess (pps ppx_jane)))
+
+(alias
+ (name default)
+ (deps counters.bc.js index.html))

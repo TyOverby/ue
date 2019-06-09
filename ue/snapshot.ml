@@ -1,5 +1,5 @@
 type ('result, 'action, 'model) t =  {
-    apply_action : 'action -> schedule_action:('action -> unit) -> 'model;
+    apply_action : schedule_action:('action -> unit) -> 'action -> 'model;
     result: 'result
 } [@@deriving fields]
 

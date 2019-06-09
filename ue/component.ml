@@ -17,11 +17,30 @@ module Full = struct
         -> ('result, 'action, 'model) Snapshot.t Incr.t
 end
 
+
+module Leaf_component = struct
+  module type S = sig 
+    type model
+    type action
+    type result
+    val apply_action: schedule_action:(action -> unit) -> model -> action -> model
+    val view: model -> inject:(action -> Event.t) -> result
+  end
+
+  type ('result, 'action, 'model) t = 
+      (module S
+       with type model = 'model 
+       and type action = 'action 
+       and type result = 'result)
+end
+
+
 type ('result, 'action, 'model) t =
     | Constant : 'result -> ('result, Nothing.t, _) t
     | Dep :  ('result, 'model) Dep.t -> ('result, Nothing.t, 'model) t
     | Full : ('result, 'action, 'model) Full.t -> ('result, 'action, 'model) t
     | Map : ('r1, 'a, 'm) t * ('r1 -> 'r2) -> ('r2, 'a, 'm) t 
+    | Leaf: ('result, 'action, 'model) Leaf_component.t -> ('result, 'action, 'model) t
     | Compose_similar : 
          ('r1, 'a1, 'model) t 
        * ('r2, 'a2, 'model) t 
@@ -55,7 +74,7 @@ module Similar = struct
       let inject_b e = inject (Either.second e) in
       let%map a = eval1 ~old_model ~model ~inject:inject_a a
       and     b = eval2 ~old_model ~model ~inject:inject_b b in
-      let apply_action action ~schedule_action = 
+      let apply_action ~schedule_action action = 
         match action with
         | Either.First a_action -> 
             let schedule_action a = schedule_action (Either.first a) in
@@ -91,7 +110,7 @@ module Disparate = struct
       and       b = eval2 ~old_model:old_model_b ~model:model_b ~inject:inject_b b 
       and model_a = model_a 
       and model_b = model_b in 
-      let apply_action action  ~schedule_action = 
+      let apply_action ~schedule_action action = 
         match action with
         | Either.First a_action -> 
           let schedule_action a = schedule_action (Either.first a) in
@@ -107,24 +126,35 @@ end
 (* GADTS ARE TRULY THE BEST OH LORD *)
 let rec eval: type r a m . (r, a, m) eval_type = 
     fun ~old_model ~model ~inject -> function 
-    | Constant result -> Incr.const (Snapshot.create ~result ~apply_action:Nothing.unreachable_code)
+    | Constant result -> Incr.const (Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->  Nothing.unreachable_code))
     | Dep f -> 
       let%map result = f model in
-      Snapshot.create ~result ~apply_action:Nothing.unreachable_code
+      Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ -> Nothing.unreachable_code)
     | Full f -> f ~old_model ~model ~inject
     | Map (t, f) -> 
       let%map snapshot = eval ~old_model ~model ~inject t in
       Snapshot.create 
         ~result:(f (Snapshot.result snapshot)) 
         ~apply_action:(Snapshot.apply_action snapshot)
+    | Leaf module_test -> 
+      let module M = (val module_test: Leaf_component.S
+                      with type result = r 
+                      and  type action = a 
+                      and  type model  = m) in
+      let%map model = model in
+      let result = M.view model ~inject in
+      let apply_action = M.apply_action model in 
+      Snapshot.create ~result ~apply_action
     | Compose_similar (a, b) -> Similar.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
     | Compose_disparate (a, b) -> Disparate.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
 
 (* Constructor Functions *)
 let return r = Constant r 
+let of_constant = return
 let of_model_map ~f = Dep (Dep.of_mapped ~f)
 let of_incr_model_map ~f = Dep (Dep.of_fun ~f)
 let of_full ~f = Full f
+let of_leaf_component m = Leaf m
 
 let map t ~f = Map (t, f)
 

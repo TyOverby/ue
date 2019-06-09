@@ -33,7 +33,6 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
     let old_model_v = Incr.Var.create initial_model in
     let old_model = Incr.Var.watch old_model_v in
 
-
     let inject = Action_definition.inject in
 
     (* TODO: implement cutoff *)
@@ -46,14 +45,22 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
       Incr.Observer.value_exn app_observer 
       |> Snapshot.result
       |> Node.Internal.to_internal_node in
+
     let html_dom = 
       html 
       |> Virtual_dom.Vdom.Node.to_dom in
 
+    let elem = J.Dom_html.getElementById_exn "app" in
+    let parent =
+      Option.value_exn ~here:[%here] (J.Js.Opt.to_option elem##.parentNode)
+    in
+
+    J.Dom.replaceChild parent html_dom elem;
+
     let prev_html = ref html in
     let prev_elt = ref html_dom in
 
-    let _perform_update () =
+    let perform_update () =
        let now =
          let date = new%js J.Js.date_now in
          Time_ns.Span.of_ms date##getTime |> Time_ns.of_span_since_epoch
@@ -65,11 +72,13 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
          Incr.Observer.value_exn app_observer 
          |> Snapshot.result
          |> Node.Internal.to_internal_node in
+
        let patch = Virtual_dom.Vdom.Node.Patch.create ~previous:!prev_html ~current:html in
        let elt = Virtual_dom.Vdom.Node.Patch.apply patch !prev_elt in
        Incr.Var.set old_model_v (Incr.Var.value model_v);
        prev_html := html;
        prev_elt := elt;
-       failwith "unimplemented"
     in 
+    perform_update ();
+
     ()

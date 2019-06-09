@@ -1,6 +1,3 @@
-open! Core_kernel
-open! Import
-
 module Start = Start
 
 module Vdom = struct 
