@@ -11,17 +11,15 @@ module Counter_component = struct
     | Decrement -> model - 1
 
   let view model ~inject = 
-    let open Vdom.Node in
-    let open Vdom.Attr in
-
     let button_generator string action = 
-      let on_click = on_click (fun () -> inject action) in
-      button ~attrs:[| on_click |] [| text string |] in 
-
-    div [| button_generator "+1" Increment
-         ; Vdom.Node.text (string_of_int model)
-         ; button_generator "-1" Decrement
-        |]
+      let on_click = Vdom.Attr.on_click (fun () -> inject action) in
+      Vdom.Node.button ~attrs:[| on_click |] [| Vdom.Node.text string |] 
+    in 
+    Vdom.Node.div 
+      [| button_generator "+1" Increment
+       ; Vdom.Node.text (string_of_int model)
+       ; button_generator "-1" Decrement
+      |]
 end
 ;;
 
