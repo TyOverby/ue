@@ -11,6 +11,7 @@ type event_handler = (unit -> Event.t) -> t
 let id = V.Attr.id
 
 let on name handler = 
+    let name = "on" ^ name in
     let f _dom_event =
         Event.Expert.handle (handler ());
         J.Js._true

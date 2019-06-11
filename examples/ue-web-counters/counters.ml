@@ -1,7 +1,7 @@
 open! Ue 
 open! Ue_web
 
-module Counter_component: Component.Leaf_component.S = struct 
+module Counter_component = struct 
   type result = Vdom.Node.t
   type model = int
   type action = Increment | Decrement
@@ -22,9 +22,12 @@ module Counter_component: Component.Leaf_component.S = struct
          ; Vdom.Node.text (string_of_int model)
          ; button_generator "-1" Decrement
         |]
-
 end
 ;;
 
-Start.start 0 (Component.of_leaf_component (module Counter_component))
+
+let counter_component = 
+  Component.of_leaf_component (module Counter_component);;
+
+Start.start 0 counter_component
 

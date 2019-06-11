@@ -1,7 +1,8 @@
 (executable
  (name hello_world)
  (libraries ue ue_web)
- (js_of_ocaml)
+ (js_of_ocaml (flags (:standard --setenv FORCE_DROP_INLINE_TEST=true)))
+
  (preprocess (pps ppx_jane)))
 
 (alias

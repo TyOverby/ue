@@ -146,7 +146,7 @@ let rec eval: type r a m . (r, a, m) eval_type =
       let apply_action = M.apply_action model in 
       Snapshot.create ~result ~apply_action
     | Compose_similar (a, b) -> Similar.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
-    | Compose_disparate (a, b) -> Disparate.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
+    | Compose_disparate (a, b) ->  Disparate.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
 
 (* Constructor Functions *)
 let return r = Constant r 
