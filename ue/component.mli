@@ -47,7 +47,11 @@ module Leaf_component: sig
        and type result = 'result)
 end
 
-val of_leaf_component: ('result, 'action, 'model) Leaf_component.t -> ('result, 'action, 'model) t
+val of_leaf : ('result, 'action, 'model) Leaf_component.t -> ('result, 'action, 'model) t
+val build_map
+  :  ('result, 'action, 'model) t 
+  -> comparator:('k, 'cmp) Map.comparator 
+  -> (('k, 'result, 'cmp) Map.t, 'k * 'action, ('k, 'model, 'cmp) Map.t) t
 
 module Different_model : sig 
   module Let_syntax : sig 

@@ -34,20 +34,6 @@ module Leaf_component = struct
        and type result = 'result)
 end
 
-module Dict : sig 
-    type ('key, +'value, 'cmp) t = ('key, 'value, 'cmp) Map.t
-    val strip : 
-        (('a1, 'a2, 'a3) t, ('b1, 'b2, 'b3) t) Type_equal.equal 
-        -> ('a1, 'b1) Type_equal.equal 
-         * ('a2, 'b2) Type_equal.equal
-         * ('a3, 'b3) Type_equal.equal 
-    
-end = struct 
-    type ('key, +'value, 'cmp) t = ('key, 'value, 'cmp) Map.t
-    let strip = failwith ""
-end
-
-
 type ('result, 'action, 'model) t =
     | Constant : 'result -> ('result, Nothing.t, _) t
     | Dep :  ('result, 'model) Dep.t -> ('result, Nothing.t, 'model) t
@@ -174,7 +160,6 @@ let rec eval: type r a m . (r, a, m) eval_type =
           | Some m -> m
           | None -> Map.empty comparator
         ) in
-        let inject _ = failwith "unimplemented" in
         let model_and_old_model_map = Incr.Map.merge model old_model ~f:(fun ~key:_ -> function 
           | `Left model -> Some (model, None)
           | `Right _ -> None
@@ -212,7 +197,13 @@ let of_constant = return
 let of_model_map ~f = Dep (Dep.of_mapped ~f)
 let of_incr_model_map ~f = Dep (Dep.of_fun ~f)
 let of_full ~f = Full f
-let of_leaf_component m = Leaf m
+let of_leaf m = Leaf m
+
+
+(* rename this *) 
+let build_map t ~comparator = 
+  let open Core_kernel.Type_equal in
+  Dict {t; r_by_k= T; m_by_k= T; comparator }
 
 let map t ~f = Map (t, f)
 

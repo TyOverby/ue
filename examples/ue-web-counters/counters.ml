@@ -1,3 +1,4 @@
+open! Core_kernel
 open! Ue 
 open! Ue_web
 
@@ -25,7 +26,18 @@ end
 
 
 let counter_component = 
-  Component.of_leaf_component (module Counter_component);;
+  let open Component in 
+  of_leaf (module Counter_component) 
+  |> build_map ~comparator:(module Int)
+  |> map ~f:(fun result_map -> 
+    Vdom.Node.div (List.to_array (Map.data result_map)))
+;;
 
-Start.start 0 counter_component
+let initial_model =
+    Map.empty (module Int)
+    |> Map.add_exn ~key:0 ~data:0 
+    |> Map.add_exn ~key:1 ~data:5 
+;;
+
+Start.start initial_model counter_component
 
