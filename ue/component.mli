@@ -3,7 +3,7 @@ open! Core_kernel
 type ('result, 'action, 'model) t 
 
 val eval 
-  :  old_model:'model Incr.t 
+  :  old_model:'model option Incr.t 
   -> model:'model Incr.t 
   -> inject:('action -> Event.t) 
   -> ('result, 'action, 'model) t 
@@ -20,7 +20,7 @@ val of_incr_model_map
   -> ('result, Nothing.t, 'model) t
 
 val of_full
-  :  f:( old_model: 'model Incr.t
+  :  f:( old_model: 'model option Incr.t
         -> model: 'model Incr.t
         -> inject: ('action -> Event.t)
         -> ('result, 'action, 'model) Snapshot.t Incr.t) 

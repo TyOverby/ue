@@ -19,7 +19,7 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
     
     let model_v = Incr.Var.create initial_model in
     let model = Incr.Var.watch model_v in
-    let old_model_v = Incr.Var.create initial_model in
+    let old_model_v = Incr.Var.create None in
     let old_model = Incr.Var.watch old_model_v in
 
     let inject = User_action_definition.inject in
@@ -56,7 +56,7 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
 
        let html = Snapshot.result (read_app ()) in
        Mount_point.update mount_point html;
-       Incr.Var.set old_model_v (Incr.Var.value model_v);
+       Incr.Var.set old_model_v (Some (Incr.Var.value model_v));
        Schedule_once.schedule scheduler ~f:perform_update 
     in 
 
