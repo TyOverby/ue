@@ -37,7 +37,7 @@ module Leaf_component: sig
     type action
     type result
     val apply_action: schedule_action:(action -> unit) -> model -> action -> model
-    val view: model -> inject:(action -> Event.t) -> result
+    val view: inject:(action -> Event.t) -> model -> result
   end
 
   type ('result, 'action, 'model) t = 
