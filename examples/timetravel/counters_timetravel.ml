@@ -42,7 +42,7 @@ end
 let counters_component = 
   let open Component in 
   of_leaf (module Counter_component) 
-  |> build_map ~comparator:(module Int)
+  |> Combinator.assoc ~comparator:(module Int)
   |> map ~f:(fun result_map -> 
     Vdom.Node.div (List.to_array (Map.data result_map)))
 ;;
@@ -51,13 +51,18 @@ let add_counter_component =
   Component.of_leaf (module Add_counter_component)
 
 let application_component = 
-  let open Component.Same_model in 
+  let open Component.Same_model.Let_syntax in 
   let%map counter_component = counters_component 
   and add_counter_component = add_counter_component in 
   Vdom.Node.div [| add_counter_component; counter_component |]
 
-let initial_model = Map.empty (module Int)
+let timetraveled_component = 
+  Ue.Component.map 
+    (Ue_web_templates.Spacetime.create application_component)
+    ~f:(fun (app, timetravel) -> timetravel app)
+
+let initial_model = Ue_web_templates.Spacetime.wrap_model (Int.Map.empty) 
 ;;
 
-Start.start initial_model application_component
+Start.start initial_model timetraveled_component
 

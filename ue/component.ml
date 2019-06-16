@@ -1,12 +1,12 @@
 open! Core_kernel
-
 open Incr.Let_syntax
 
-module Dep = struct 
-    type ('result, 'model) t = 'model Incr.t -> 'result Incr.t 
+module Arrow = struct 
+    type ('result, 'model) incremental = 'model Incr.t -> 'result Incr.t 
+    type ('result, 'model) non_incremental = 'model -> 'result
 
-    let of_fun ~f = f
-    let of_mapped ~f = Incr.map ~f
+    let incremental ~f : ('result, 'model) incremental = f
+    let non_incremental ~f : ('result, 'model) non_incremental = f
 end
 
 module Full = struct
@@ -16,7 +16,6 @@ module Full = struct
         -> inject: ('action -> Event.t)
         -> ('result, 'action, 'model) Snapshot.t Incr.t
 end
-
 
 module Leaf_component = struct
   module type S = sig 
@@ -34,18 +33,24 @@ module Leaf_component = struct
        and type result = 'result)
 end
 
+module Assoc = struct 
+  type ('result, 'action, 'model, 'k, 'cmp, 'r_by_k, 'm_by_k) t = 
+      { comparator: ('k, 'cmp) Map.comparator
+      ; r_by_k: ('r_by_k, ('k, 'result, 'cmp) Map.t) Type_equal.t
+      ; m_by_k: ('m_by_k, ('k, 'model, 'cmp) Map.t) Type_equal.t
+  }
+end
+
 type ('result, 'action, 'model) t =
     | Constant : 'result -> ('result, Nothing.t, _) t
-    | Dep :  ('result, 'model) Dep.t -> ('result, Nothing.t, 'model) t
+    | Incremental_arrow :  ('result, 'model) Arrow.incremental -> ('result, Nothing.t, 'model) t
+    | Non_incremental_arrow :  ('result, 'model) Arrow.non_incremental -> ('result, Nothing.t, 'model) t
     | Full : ('result, 'action, 'model) Full.t -> ('result, 'action, 'model) t
     | Map : ('r1, 'a, 'm) t * ('r1 -> 'r2) -> ('r2, 'a, 'm) t 
     | Leaf: ('result, 'action, 'model) Leaf_component.t -> ('result, 'action, 'model) t
-    | Dict: 
-        { t: ('result, 'action, 'model) t 
-        ; comparator: ('k, 'cmp) Map.comparator
-        ; r_by_k : ('r_by_k, ('k, 'result, 'cmp) Map.t) Type_equal.t
-        ; m_by_k : ('m_by_k, ('k, 'model, 'cmp) Map.t) Type_equal.t
-        }
+    | Assoc: 
+         ('result, 'action, 'model) t 
+       * ('result, 'action, 'model, 'k, 'cmp, 'r_by_k, 'm_by_k) Assoc.t
       -> ('r_by_k, 'k * 'action, 'm_by_k) t 
     | Compose_similar : 
          ('r1, 'a1, 'model) t 
@@ -133,9 +138,12 @@ end
 let rec eval: type r a m . (r, a, m) eval_type = 
     fun ~old_model ~model ~inject -> function 
     | Constant result -> Incr.const (Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->  Nothing.unreachable_code))
-    | Dep f -> 
+    | Incremental_arrow f -> 
       let%map result = f model in
       Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ -> Nothing.unreachable_code)
+    | Non_incremental_arrow f -> 
+      let%map model = model in 
+      Snapshot.create ~result:(f model) ~apply_action:(fun ~schedule_action:_ -> Nothing.unreachable_code)
     | Full f -> f ~old_model ~model ~inject
     | Map (t, f) -> 
       let%map snapshot = eval ~old_model ~model ~inject t in
@@ -153,7 +161,8 @@ let rec eval: type r a m . (r, a, m) eval_type =
       Snapshot.create ~result ~apply_action
     | Compose_similar (a, b) -> Similar.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
     | Compose_disparate (a, b) ->  Disparate.compose ~eval1:eval ~eval2:eval ~old_model ~model ~inject a b 
-    | Dict {t; comparator; r_by_k; m_by_k} -> 
+    | Assoc (t, { comparator; r_by_k; m_by_k}) -> 
+        (* I couldn't figure out how to pull this out into another function *)
         let T = r_by_k in 
         let T = m_by_k in 
         let old_model = Incr.map old_model ~f:(function
@@ -193,35 +202,39 @@ let rec eval: type r a m . (r, a, m) eval_type =
 
 (* Constructor Functions *)
 let return r = Constant r 
-let of_constant = return
-let of_model_map ~f = Dep (Dep.of_mapped ~f)
-let of_incr_model_map ~f = Dep (Dep.of_fun ~f)
+let constant = return
+let of_arrow ~f = Non_incremental_arrow (Arrow.non_incremental ~f)
+let of_incremental_arrow ~f = Incremental_arrow (Arrow.incremental ~f)
 let of_leaf m = Leaf m
 
-
-(* rename this *) 
-let build_map t ~comparator = 
-  let open Core_kernel.Type_equal in
-  Dict {t; r_by_k= T; m_by_k= T; comparator }
-
 let map t ~f = Map (t, f)
+
+module Combinator = struct 
+  let assoc t ~comparator = 
+    let open Core_kernel.Type_equal in
+    Assoc (t,{r_by_k= T; m_by_k= T; comparator })
+end 
 
 module Different_model = struct
     let compose a b = Compose_disparate (a, b)
 
     module Let_syntax = struct 
-      let return = return 
-      let both = compose
-      let map = map
+      module Let_syntax = struct
+        let return = return 
+        let both = compose
+        let map = map
+      end 
     end
 end
 
 module Same_model = struct
     let compose a b = Compose_similar (a, b)
     module Let_syntax = struct 
-      let return = return 
-      let both = compose
-      let map = map
+      module Let_syntax = struct
+        let return = return 
+        let both = compose
+        let map = map
+      end
     end
 end
 
