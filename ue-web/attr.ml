@@ -9,6 +9,7 @@ type string_attribute = string -> t
 type event_handler = (unit -> Event.t) -> t
 
 let id = V.Attr.id
+let class_name = V.Attr.class_
 
 let on name handler = 
     let name = "on" ^ name in

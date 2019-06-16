@@ -21,22 +21,26 @@ module Result = struct
     type t = Ue_web.Vdom.Node.t -> Ue_web.Vdom.Node.t
 end
 
-let draw_history ~inject ~data:_ ~cursor ~x:_ ~y:_ ~children = 
+let draw_history ~global_cursor ~inject ~data:_ ~cursor ~x:_ ~y:_ ~children = 
     let on_click = Vdom.Attr.on_click (fun () -> 
         inject (Action.Set_cursor cursor)) in
-    let my_node = Vdom.Node.text "o" in
-    let child_nodes = my_node :: children in
-    Vdom.Node.div ~attrs:[|on_click|] (List.to_array child_nodes)
+    let button_attrs = if Spacetime_tree.Cursor.equal global_cursor cursor 
+    then [|on_click; Vdom.Attr.class_name "current"|]
+    else [|on_click|] in
+    let my_node = Vdom.Node.button ~attrs:button_attrs [| Vdom.Node.text "●" |] in
+    let children = Vdom.Node.div ~attrs:[| Vdom.Attr.class_name "ch" |] (List.to_array children ) in
+    Vdom.Node.div ~attrs:[| Vdom.Attr.class_name  "cnt" |] [|my_node ; children|]
 
 let view cursor history ~inject = 
     let open Ue.Incr.Let_syntax in
-    let%map _cursor = cursor 
+    let%map cursor = cursor 
     and history = history in 
+    let spacetime = Spacetime_tree.traverse history ~f:(draw_history ~inject ~global_cursor:cursor) in
+    let spacetime = Vdom.Node.div ~attrs:[| Vdom.Attr.class_name "history_wrapper"|] [|spacetime|] in
     fun window ->
-      Vdom.Node.div  [|
-          window; 
-          Spacetime_tree.traverse history ~f:(draw_history ~inject)
-      |]
+        Vdom.Node.div 
+          ~attrs:[|Vdom.Attr.class_name "history_wrapper_wrapper"|]  
+          [| window;  spacetime |]
 ;;
 
 let wrap_model m = 

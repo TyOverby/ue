@@ -5,6 +5,7 @@ type 'a t [@@deriving sexp]
 module Cursor : sig
   type t
   val to_string: t -> string
+  val equal: t -> t -> bool
 end
 
 val create: 'a -> 'a t * Cursor.t

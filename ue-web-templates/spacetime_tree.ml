@@ -9,6 +9,7 @@ module Cursor = struct
   type t = int list
   let to_string t  = 
       t |> List.sexp_of_t (Int.sexp_of_t) |> Sexp.to_string
+  let equal = List.equal (Int.equal)
 end
 
 
