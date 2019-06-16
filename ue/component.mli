@@ -12,7 +12,7 @@ val of_incremental_arrow :
 val map :
   ('r1, 'action, 'model) t -> f:('r1 -> 'r2) -> ('r2, 'action, 'model) t
 
-module Leaf_component : sig
+module Module_component: sig
   module type S = sig
     type model
 
@@ -33,11 +33,26 @@ module Leaf_component : sig
         and type result = 'result)
 end
 
-val of_leaf :
-     ('result, 'action, 'model) Leaf_component.t
+val of_subcomponent
+  :  field: ('outer_model, 'inner_model) Field.t
+  -> f:('outer_model -> ('result, 'action, 'inner_model) t)
+  -> ('result, 'action, 'outer_model) t
+
+val of_functions
+    :  apply_action: (schedule_action:('action -> unit) -> 'model -> 'action -> 'model)
+    -> view: (inject:('action -> Event.t) -> 'model -> 'result)
+    -> ('result, 'action, 'model) t
+
+
+val of_module :
+     ('result, 'action, 'model) Module_component.t
   -> ('result, 'action, 'model) t
 
 module Combinator : sig
+  val fix 
+    :  (('result, 'action, 'model) t -> ('result, 'action, 'model) t) 
+    -> ('result, 'action, 'model) t
+
   val assoc :
        ('result, 'action, 'model) t
     -> comparator:('k, 'cmp) Map.comparator

@@ -1,0 +1,12 @@
+(executable
+ (name tree)
+ (libraries ue ue_web)
+ (preprocess
+  (pps ppx_jane))
+ (js_of_ocaml
+  (flags
+   (:standard --setenv FORCE_DROP_INLINE_TEST=true))))
+
+(alias
+ (name default)
+ (deps tree.bc.js index.html))

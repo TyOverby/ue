@@ -19,7 +19,7 @@ module Full = struct
     -> ('result, 'action, 'model) Snapshot.t Incr.t
 end
 
-module Leaf_component = struct
+module Module_component = struct
   module type S = sig
     type model
 
@@ -47,6 +47,13 @@ module Assoc = struct
     ; m_by_k: ('m_by_k, ('k, 'model, 'cmp) Map.t) Type_equal.t }
 end
 
+module Record = struct 
+    type ('result, 'action, 'model) t = 
+        { apply_action: schedule_action:('action -> unit) -> 'model -> 'action -> 'model
+        ; view: inject:('action -> Event.t) -> 'model -> 'result
+    }
+end
+
 type ('result, 'action, 'model) t =
   | Constant : 'result -> ('result, Nothing.t, _) t
   | Incremental_arrow :
@@ -57,8 +64,14 @@ type ('result, 'action, 'model) t =
       -> ('result, Nothing.t, 'model) t
   | Full : ('result, 'action, 'model) Full.t -> ('result, 'action, 'model) t
   | Map : ('r1, 'a, 'm) t * ('r1 -> 'r2) -> ('r2, 'a, 'm) t
+  | Fix : (('r, 'a, 'm) t -> ('r, 'a, 'm) t) -> ('r, 'a, 'm) t
+  | Record : ('r, 'a, 'm) Record.t -> ('r, 'a, 'm) t  
+  | Subcomponent : 
+      ('outer_model -> ('result, 'action, 'inner_model) t)
+      * ('outer_model, 'inner_model) Field.t
+      -> ('result, 'action, 'outer_model) t 
   | Leaf :
-      ('result, 'action, 'model) Leaf_component.t
+      ('result, 'action, 'model) Module_component.t
       -> ('result, 'action, 'model) t
   | Assoc :
       ('result, 'action, 'model) t
@@ -162,6 +175,26 @@ let rec eval : type r a m. (r, a, m) eval_type =
       Snapshot.create ~result:(f model)
         ~apply_action:(fun ~schedule_action:_ -> Nothing.unreachable_code)
   | Full f -> f ~old_model ~model ~inject
+  | Record r -> 
+    let%map model = model in 
+    let result = r.view ~inject model in 
+    let apply_action ~schedule_action a = r.apply_action ~schedule_action model a in
+    Snapshot.create ~result ~apply_action
+  | Subcomponent (f, field) -> 
+    let%bind component = Incr.map model ~f in 
+    let model_downwards = Incr.map model ~f:(Field.get field) in 
+    let old_model_downwards = Incr.map old_model ~f:(Option.map ~f:(Field.get field)) in 
+    let%map snapshot = eval component ~old_model:old_model_downwards ~model:model_downwards ~inject 
+    and model = model in 
+    let result = Snapshot.result snapshot in
+    let apply_action ~schedule_action a = 
+        let inner_model = Snapshot.apply_action snapshot ~schedule_action a in
+        Field.fset field model inner_model
+    in 
+    Snapshot.create ~result ~apply_action
+  | Fix f -> 
+    let component = f (Fix f)  in 
+    eval ~old_model ~model ~inject component
   | Map (t, f) ->
       let%map snapshot = eval ~old_model ~model ~inject t in
       Snapshot.create
@@ -169,7 +202,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
         ~apply_action:(Snapshot.apply_action snapshot)
   | Leaf module_test ->
       let module M = ( val module_test
-                         : Leaf_component.S
+                         : Module_component.S
                          with type result = r
                           and type action = a
                           and type model = m )
@@ -236,11 +269,17 @@ let of_arrow ~f = Non_incremental_arrow (Arrow.non_incremental ~f)
 
 let of_incremental_arrow ~f = Incremental_arrow (Arrow.incremental ~f)
 
-let of_leaf m = Leaf m
+let of_module m = Leaf m
+
+let of_functions ~apply_action ~view = Record { apply_action; view }
+
+let of_subcomponent ~field ~f = Subcomponent (f, field)
 
 let map t ~f = Map (t, f)
 
 module Combinator = struct
+  let fix f = Fix f
+
   let assoc t ~comparator =
     let open Core_kernel.Type_equal in
     Assoc (t, {r_by_k= T; m_by_k= T; comparator})
