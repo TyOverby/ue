@@ -1,8 +1,11 @@
 (executable
  (name counters)
  (libraries ue ue_web)
- (preprocess (pps ppx_jane))
- (js_of_ocaml (flags (:standard --setenv FORCE_DROP_INLINE_TEST=true))))
+ (preprocess
+  (pps ppx_jane))
+ (js_of_ocaml
+  (flags
+   (:standard --setenv FORCE_DROP_INLINE_TEST=true))))
 
 (alias
  (name default)

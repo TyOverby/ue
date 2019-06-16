@@ -8,7 +8,9 @@ end
 
 module type S = sig
   type action
+
   type t = private ..
+
   type t += C : action -> t
 
   val inject : action -> t
@@ -17,11 +19,10 @@ end
 module type Event = sig
   type t = private ..
 
-  type t +=
-    | Nop
-    | All of t list
+  type t += Nop | All of t list
 
   module type Handler = Handler
+
   module type S = S
 
   module Define (Handler : Handler) :

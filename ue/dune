@@ -2,4 +2,5 @@
  (name ue)
  (libraries base incremental incr_map incr_select)
  (js_of_ocaml)
- (preprocess (pps ppx_jane)))
+ (preprocess
+  (pps ppx_jane)))

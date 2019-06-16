@@ -2,4 +2,5 @@
  (name ue_web)
  (libraries ue base incremental virtual_dom)
  (js_of_ocaml)
- (preprocess (pps ppx_jane js_of_ocaml-ppx)))
+ (preprocess
+  (pps ppx_jane js_of_ocaml-ppx)))
