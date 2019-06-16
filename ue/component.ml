@@ -196,7 +196,6 @@ let return r = Constant r
 let of_constant = return
 let of_model_map ~f = Dep (Dep.of_mapped ~f)
 let of_incr_model_map ~f = Dep (Dep.of_fun ~f)
-let of_full ~f = Full f
 let of_leaf m = Leaf m
 
 
@@ -224,4 +223,9 @@ module Same_model = struct
       let both = compose
       let map = map
     end
+end
+
+module Expert = struct 
+  let of_full ~f = Full f
+  let eval = eval
 end

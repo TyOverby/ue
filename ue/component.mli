@@ -2,13 +2,6 @@ open! Core_kernel
 
 type ('result, 'action, 'model) t 
 
-val eval 
-  :  old_model:'model option Incr.t 
-  -> model:'model Incr.t 
-  -> inject:('action -> Event.t) 
-  -> ('result, 'action, 'model) t 
-  -> ('result, 'action, 'model) Snapshot.t Incr.t 
-
 val of_constant: 'result -> ('result, Nothing.t, _) t
 
 val of_model_map
@@ -18,13 +11,6 @@ val of_model_map
 val of_incr_model_map
   :  f:('model Incr.t -> 'result Incr.t) 
   -> ('result, Nothing.t, 'model) t
-
-val of_full
-  :  f:( old_model: 'model option Incr.t
-        -> model: 'model Incr.t
-        -> inject: ('action -> Event.t)
-        -> ('result, 'action, 'model) Snapshot.t Incr.t) 
-  -> ('result, 'action, 'model) t
 
 val map
   :  ('r1, 'action, 'model) t 
@@ -93,4 +79,20 @@ module Same_model : sig
     :  ('r1, 'a1, 'm) t 
     -> ('r2, 'a2, 'm) t
     -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'm) t
+end
+
+module Expert : sig
+  val of_full
+    :  f:( old_model: 'model option Incr.t
+          -> model: 'model Incr.t
+          -> inject: ('action -> Event.t)
+          -> ('result, 'action, 'model) Snapshot.t Incr.t) 
+    -> ('result, 'action, 'model) t
+
+  val eval 
+    :  old_model:'model option Incr.t 
+    -> model:'model Incr.t 
+    -> inject:('action -> Event.t) 
+    -> ('result, 'action, 'model) t 
+    -> ('result, 'action, 'model) Snapshot.t Incr.t 
 end

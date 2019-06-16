@@ -3,7 +3,6 @@ open! Import
 open Js_abstractions
 module J = Js_of_ocaml
 
-
 let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) = 
     let queue : a Queue.t = Queue.create () in
 
@@ -27,7 +26,7 @@ let start (type a m) (initial_model:m) (component: (Node.t, a, m) Component.t) =
 
     (* TODO: implement cutoff *)
 
-    let app = Component.eval ~old_model ~model ~inject component in 
+    let app = Component.Expert.eval ~old_model ~model ~inject component in 
     let app_observer =  Incr.observe app in 
     Incr.stabilize ();
 

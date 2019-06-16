@@ -1,0 +1,7 @@
+(library
+ (name ue_web_templates)
+ (libraries ue ue_web)
+ (js_of_ocaml)
+ (preprocess (pps ppx_jane js_of_ocaml-ppx)))
+
+

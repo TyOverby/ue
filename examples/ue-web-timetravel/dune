@@ -1,0 +1,9 @@
+(executable
+ (name counters_timetravel)
+ (libraries ue ue_web ue_web_templates)
+ (preprocess (pps ppx_jane))
+ (js_of_ocaml (flags (:standard --setenv FORCE_DROP_INLINE_TEST=true))))
+
+(alias
+ (name default)
+ (deps counters_timetravel.bc.js index.html))
