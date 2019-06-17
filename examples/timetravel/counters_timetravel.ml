@@ -14,7 +14,7 @@ module Add_counter_component = struct
         let key = Map.length model in
         Map.add_exn model ~key ~data:0
 
-  let view ~inject _ =
+  let compute ~inject _ =
     let on_click =
       Vdom.Attr.on_click (fun () -> inject Add_another_counter)
     in
@@ -33,7 +33,7 @@ module Counter_component = struct
     | Increment -> model + 1
     | Decrement -> model - 1
 
-  let view ~inject model =
+  let compute ~inject model =
     let button_generator string action =
       let on_click = Vdom.Attr.on_click (fun () -> inject action) in
       Vdom.Node.button ~attrs:[|on_click|] [|Vdom.Node.text string|]
@@ -46,12 +46,12 @@ end
 
 let counters_component =
   let open Component in
-  of_leaf (module Counter_component)
+  of_module (module Counter_component)
   |> Combinator.assoc ~comparator:(module Int)
   |> map ~f:(fun result_map ->
          Vdom.Node.div (List.to_array (Map.data result_map)) )
 
-let add_counter_component = Component.of_leaf (module Add_counter_component)
+let add_counter_component = Component.of_module (module Add_counter_component)
 
 let application_component =
   let open Component.Same_model.Let_syntax in

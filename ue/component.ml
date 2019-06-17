@@ -30,7 +30,7 @@ module Module_component = struct
     val apply_action :
       schedule_action:(action -> unit) -> model -> action -> model
 
-    val view : inject:(action -> Event.t) -> model -> result
+    val compute: inject:(action -> Event.t) -> model -> result
   end
 
   type ('result, 'action, 'model) t =
@@ -51,7 +51,7 @@ module Record = struct
   type ('result, 'action, 'model) t =
     { apply_action:
         schedule_action:('action -> unit) -> 'model -> 'action -> 'model
-    ; view: inject:('action -> Event.t) -> 'model -> 'result }
+    ; compute: inject:('action -> Event.t) -> 'model -> 'result }
 end
 
 type ('result, 'action, 'model) t =
@@ -177,7 +177,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
   | Full f -> f ~old_model ~model ~inject
   | Record r ->
       let%map model = model in
-      let result = r.view ~inject model in
+      let result = r.compute ~inject model in
       let apply_action ~schedule_action a =
         r.apply_action ~schedule_action model a
       in
@@ -216,7 +216,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
                           and type model = m )
       in
       let%map model = model in
-      let result = M.view model ~inject in
+      let result = M.compute model ~inject in
       let apply_action = M.apply_action model in
       Snapshot.create ~result ~apply_action
   | Compose_similar (a, b) ->
@@ -279,7 +279,7 @@ let of_incremental_arrow ~f = Incremental_arrow (Arrow.incremental ~f)
 
 let of_module m = Leaf m
 
-let of_functions ~apply_action ~view = Record {apply_action; view}
+let of_functions ~apply_action ~compute = Record {apply_action; compute}
 
 let of_subcomponent ~field ~f = Subcomponent (f, field)
 

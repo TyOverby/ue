@@ -1,6 +1,6 @@
 open! Core_kernel
 
-(** Component The Component is the building-block of a Ue program. A
+(** The Component is the building-block of a Ue program. A
     Component can be thought of as a function from 'model to 'result, but
     (typically) through interaction with the 'result, 'actions can be issued
     which can modify the 'model. The typical way that a Ue program is built
@@ -37,7 +37,7 @@ val of_functions :
                    -> 'model
                    -> 'action
                    -> 'model)
-  -> view:(inject:('action -> Event.t) -> 'model -> 'result)
+  -> compute :(inject:('action -> Event.t) -> 'model -> 'result)
   -> ('result, 'action, 'model) t
 (** Creates a component directly from the callbacks that are used in the
     component lifecycle. *)
