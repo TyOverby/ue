@@ -1,3 +1,8 @@
+(** A Snapshot represents the state of a component at an instant in time. It
+    contains inside of it a fully-computed result, as well as an
+    apply_action callback which has closed over the model which constructed
+    it. *)
+
 type ('result, 'action, 'model) t
 
 val apply_action :
@@ -5,8 +10,10 @@ val apply_action :
   -> schedule_action:('action -> unit)
   -> 'action
   -> 'model
+(** Extracts the apply_action callback from the Snapshot. *)
 
 val result : ('result, 'action, 'model) t -> 'result
+(** Extracts the result from the Snapshot. *)
 
 val create :
      result:'result
