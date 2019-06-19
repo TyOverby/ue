@@ -232,8 +232,14 @@ let rec optimize : type r a m. (r, a, m) optimize_type = function
         let compute ~inject model = f (compute ~inject model) in
         Function {apply_action; compute}
     | other -> Map (other, f) )
-  | Compose_similar (l, r) -> Compose_similar (optimize l, optimize r)
-  | Compose_disparate (l, r) -> Compose_disparate (optimize l, optimize r)
+  | Compose_similar (l, r) ->
+      let l = optimize l in
+      let r = optimize r in
+      Compose_similar (l, r)
+  | Compose_disparate (l, r) ->
+      let l = optimize l in
+      let r = optimize r in
+      Compose_disparate (l, r)
   | Assoc (t, cmp) -> Assoc (optimize t, cmp)
   | other -> other
 
