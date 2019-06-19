@@ -188,4 +188,7 @@ module Expert : sig
   (** Do you like GADT's? I do. That's why this function is called [eval],
       and not called something that is more informative. Gotta keep those
       traditions alive somehow. *)
+
+  val optimize :
+    ('result, 'action, 'model) t -> ('result, 'action, 'model) t
 end

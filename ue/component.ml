@@ -221,6 +221,22 @@ let rec eval : type r a m. (r, a, m) eval_type =
       let%map apply_action = apply_action and result = results_map in
       Snapshot.create ~result ~apply_action
 
+(* HEY ZANDER CHECK THIS SHIT OUT *)
+let rec optimize : type r a m. (r, a, m) optimize_type = function
+  | Map (c, f) -> (
+    match optimize c with
+    | Constant r -> Constant (f r)
+    | Map (c, g) -> Map (c, fun a -> f (g a))
+    | Arrow arrow -> Arrow (fun m -> f (arrow m))
+    | Function {apply_action; compute} ->
+        let compute ~inject model = f (compute ~inject model) in
+        Function {apply_action; compute}
+    | other -> Map (other, f) )
+  | Compose_similar (l, r) -> Compose_similar (optimize l, optimize r)
+  | Compose_disparate (l, r) -> Compose_disparate (optimize l, optimize r)
+  | Assoc (t, cmp) -> Assoc (optimize t, cmp)
+  | other -> other
+
 (* Constructor Functions *)
 let return r = Constant r
 
@@ -283,4 +299,6 @@ module Expert = struct
   let of_full ~f = Full f
 
   let eval = eval
+
+  let optimize = optimize
 end

@@ -71,6 +71,9 @@ module Computation_types (T : T3) = struct
     -> ('result, 'action, 'model) t
     -> ('result, 'action, 'model) Snapshot.t Incr.t
 
+  type ('result, 'action, 'model) optimize_type =
+    ('result, 'action, 'model) t -> ('result, 'action, 'model) t
+
   type ('r1, 'r2, 'a1, 'a2, 'm) same_compose_type =
        eval1:('r1, 'a1, 'm) eval_type
     -> eval2:('r2, 'a2, 'm) eval_type
