@@ -51,7 +51,8 @@ let counters_component =
   |> map ~f:(fun result_map ->
          Vdom.Node.div (List.to_array (Map.data result_map)) )
 
-let add_counter_component = Component.of_module (module Add_counter_component)
+let add_counter_component =
+  Component.of_module (module Add_counter_component)
 
 let application_component =
   let open Component.Same_model.Let_syntax in

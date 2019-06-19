@@ -1,109 +1,53 @@
 open! Core_kernel
 open Incr.Let_syntax
-
-module Arrow = struct
-  type ('result, 'model) incremental = 'model Incr.t -> 'result Incr.t
-
-  type ('result, 'model) non_incremental = 'model -> 'result
-
-  let incremental ~f : ('result, 'model) incremental = f
-
-  let non_incremental ~f : ('result, 'model) non_incremental = f
-end
-
-module Full = struct
-  type ('result, 'action, 'model) t =
-       old_model:'model option Incr.t
-    -> model:'model Incr.t
-    -> inject:('action -> Event.t)
-    -> ('result, 'action, 'model) Snapshot.t Incr.t
-end
-
-module Module_component = struct
-  module type S = sig
-    type model
-
-    type action
-
-    type result
-
-    val apply_action :
-      schedule_action:(action -> unit) -> model -> action -> model
-
-    val compute: inject:(action -> Event.t) -> model -> result
-  end
-
-  type ('result, 'action, 'model) t =
-    (module S
-       with type model = 'model
-        and type action = 'action
-        and type result = 'result)
-end
-
-module Assoc = struct
-  type ('result, 'action, 'model, 'k, 'cmp, 'r_by_k, 'm_by_k) t =
-    { comparator: ('k, 'cmp) Map.comparator
-    ; r_by_k: ('r_by_k, ('k, 'result, 'cmp) Map.t) Type_equal.t
-    ; m_by_k: ('m_by_k, ('k, 'model, 'cmp) Map.t) Type_equal.t }
-end
-
-module Record = struct
-  type ('result, 'action, 'model) t =
-    { apply_action:
-        schedule_action:('action -> unit) -> 'model -> 'action -> 'model
-    ; compute: inject:('action -> Event.t) -> 'model -> 'result }
-end
+open Types
+module Module_component = Module_component
 
 type ('result, 'action, 'model) t =
+  (* Non-incremental Constructors *)
   | Constant : 'result -> ('result, Nothing.t, _) t
-  | Incremental_arrow :
-      ('result, 'model) Arrow.incremental
-      -> ('result, Nothing.t, 'model) t
-  | Non_incremental_arrow :
+  | Arrow :
       ('result, 'model) Arrow.non_incremental
       -> ('result, Nothing.t, 'model) t
-  | Full : ('result, 'action, 'model) Full.t -> ('result, 'action, 'model) t
-  | Map : ('r1, 'a, 'm) t * ('r1 -> 'r2) -> ('r2, 'a, 'm) t
-  | Fix : (('r, 'a, 'm) t -> ('r, 'a, 'm) t) -> ('r, 'a, 'm) t
-  | Record : ('r, 'a, 'm) Record.t -> ('r, 'a, 'm) t
   | Subcomponent :
       ('outer_model -> ('result, 'action, 'inner_model) t)
       * ('outer_model, 'inner_model) Field.t
       -> ('result, 'action, 'outer_model) t
-  | Leaf :
+  | Module :
       ('result, 'action, 'model) Module_component.t
       -> ('result, 'action, 'model) t
-  | Assoc :
-      ('result, 'action, 'model) t
-      * ('result, 'action, 'model, 'k, 'cmp, 'r_by_k, 'm_by_k) Assoc.t
-      -> ('r_by_k, 'k * 'action, 'm_by_k) t
+  | Function : ('r, 'a, 'm) Record.non_incremental -> ('r, 'a, 'm) t
+  (* Incremental Constructors *)
+  | Arrow_incr :
+      ('result, 'model) Arrow.incremental
+      -> ('result, Nothing.t, 'model) t
+  | Subcomponent_incr :
+      ('outer_model Incr.t -> ('result, 'action, 'inner_model) t)
+      * ('outer_model, 'inner_model) Field.t
+      -> ('result, 'action, 'outer_model) t
+  | Function_incr : ('r, 'a, 'm) Record.incremental -> ('r, 'a, 'm) t
+  (* Composition and Combinators *)
+  | Map : ('r1, 'a, 'm) t * ('r1 -> 'r2) -> ('r2, 'a, 'm) t
   | Compose_similar :
       ('r1, 'a1, 'model) t * ('r2, 'a2, 'model) t
       -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'model) t
   | Compose_disparate :
       ('r1, 'a1, 'm1) t * ('r2, 'a2, 'm2) t
       -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'm1 * 'm2) t
+  | Assoc :
+      ('result, 'action, 'model) t
+      * ('result, 'action, 'model, 'k, 'cmp, 'r_by_k, 'm_by_k) Assoc.t
+      -> ('r_by_k, 'k * 'action, 'm_by_k) t
+  | Full : ('result, 'action, 'model) Full.t -> ('result, 'action, 'model) t
 
-(* OH GOD THIS TYPE SIGNATURE *)
-type ('result, 'action, 'model) eval_type =
-     old_model:'model option Incr.t
-  -> model:'model Incr.t
-  -> inject:('action -> Event.t)
-  -> ('result, 'action, 'model) t
-  -> ('result, 'action, 'model) Snapshot.t Incr.t
+module C = Computation_types (struct
+  type nonrec ('r, 'a, 'm) t = ('r, 'a, 'm) t
+end)
+
+open C
 
 module Similar = struct
-  type ('r1, 'r2, 'a1, 'a2, 'm) compose_type =
-       eval1:('r1, 'a1, 'm) eval_type
-    -> eval2:('r2, 'a2, 'm) eval_type
-    -> old_model:'m option Incr.t
-    -> model:'m Incr.t
-    -> inject:(('a1, 'a2) Either.t -> Event.t)
-    -> ('r1, 'a1, 'm) t
-    -> ('r2, 'a2, 'm) t
-    -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'm) Snapshot.t Incr.t
-
-  let compose : (_, _, _, _, _) compose_type =
+  let compose : (_, _, _, _, _) same_compose_type =
    fun ~eval1 ~eval2 ~old_model ~model ~inject a b ->
     let inject_a e = inject (Either.first e) in
     let inject_b e = inject (Either.second e) in
@@ -123,17 +67,7 @@ module Similar = struct
 end
 
 module Disparate = struct
-  type ('r1, 'r2, 'a1, 'a2, 'm1, 'm2) compose_type =
-       eval1:('r1, 'a1, 'm1) eval_type
-    -> eval2:('r2, 'a2, 'm2) eval_type
-    -> old_model:('m1 * 'm2) option Incr.t
-    -> model:('m1 * 'm2) Incr.t
-    -> inject:(('a1, 'a2) Either.t -> Event.t)
-    -> ('r1, 'a1, 'm1) t
-    -> ('r2, 'a2, 'm2) t
-    -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'm1 * 'm2) Snapshot.t Incr.t
-
-  let compose : (_, _, _, _, _, _) compose_type =
+  let compose : (_, _, _, _, _, _) disparate_compose_type =
    fun ~eval1 ~eval2 ~old_model ~model ~inject a b ->
     let inject_a e = inject (Either.first e) in
     let inject_b e = inject (Either.second e) in
@@ -166,20 +100,42 @@ let rec eval : type r a m. (r, a, m) eval_type =
       Incr.const
         (Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->
              Nothing.unreachable_code ))
-  | Incremental_arrow f ->
-      let%map result = f model in
-      Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->
-          Nothing.unreachable_code )
-  | Non_incremental_arrow f ->
+  | Arrow f ->
       let%map model = model in
       Snapshot.create ~result:(f model)
         ~apply_action:(fun ~schedule_action:_ -> Nothing.unreachable_code)
+  | Arrow_incr f ->
+      let%map result = f model in
+      Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->
+          Nothing.unreachable_code )
   | Full f -> f ~old_model ~model ~inject
-  | Record r ->
+  | Function r ->
       let%map model = model in
       let result = r.compute ~inject model in
       let apply_action ~schedule_action a =
         r.apply_action ~schedule_action model a
+      in
+      Snapshot.create ~result ~apply_action
+  | Function_incr r ->
+      let%map result = r.compute ~inject model
+      and apply_action = r.apply_action model in
+      Snapshot.create ~result ~apply_action
+  | Subcomponent_incr (f, field) ->
+      let component = f model in
+      let model_downwards = Incr.map model ~f:(Field.get field) in
+      let old_model_downwards =
+        Incr.map old_model ~f:(Option.map ~f:(Field.get field))
+      in
+      let%map snapshot =
+        eval component ~old_model:old_model_downwards ~model:model_downwards
+          ~inject
+      and model = model in
+      let result = Snapshot.result snapshot in
+      let apply_action ~schedule_action a =
+        let inner_model =
+          Snapshot.apply_action snapshot ~schedule_action a
+        in
+        Field.fset field model inner_model
       in
       Snapshot.create ~result ~apply_action
   | Subcomponent (f, field) ->
@@ -200,15 +156,12 @@ let rec eval : type r a m. (r, a, m) eval_type =
         Field.fset field model inner_model
       in
       Snapshot.create ~result ~apply_action
-  | Fix f ->
-      let component = f (Fix f) in
-      eval ~old_model ~model ~inject component
   | Map (t, f) ->
       let%map snapshot = eval ~old_model ~model ~inject t in
       Snapshot.create
         ~result:(f (Snapshot.result snapshot))
         ~apply_action:(Snapshot.apply_action snapshot)
-  | Leaf module_test ->
+  | Module module_test ->
       let module M = ( val module_test
                          : Module_component.S
                          with type result = r
@@ -273,21 +226,17 @@ let return r = Constant r
 
 let constant = return
 
-let of_arrow ~f = Non_incremental_arrow (Arrow.non_incremental ~f)
+let of_arrow ~f = Arrow (Arrow.non_incremental ~f)
 
-let of_incremental_arrow ~f = Incremental_arrow (Arrow.incremental ~f)
+let of_module m = Module m
 
-let of_module m = Leaf m
-
-let of_functions ~apply_action ~compute = Record {apply_action; compute}
+let of_functions ~apply_action ~compute = Function {apply_action; compute}
 
 let of_subcomponent ~field ~f = Subcomponent (f, field)
 
 let map t ~f = Map (t, f)
 
 module Combinator = struct
-  let fix f = Fix f
-
   let assoc t ~comparator =
     let open Core_kernel.Type_equal in
     Assoc (t, {r_by_k= T; m_by_k= T; comparator})
@@ -319,6 +268,15 @@ module Same_model = struct
       let map = map
     end
   end
+end
+
+module Incremental = struct
+  let of_arrow ~f = Arrow_incr (Arrow.incremental ~f)
+
+  let of_subcomponent ~field ~f = Subcomponent_incr (f, field)
+
+  let of_functions ~apply_action ~compute =
+    Function_incr {apply_action; compute}
 end
 
 module Expert = struct

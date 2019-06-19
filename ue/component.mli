@@ -1,12 +1,12 @@
 open! Core_kernel
 
-(** The Component is the building-block of a Ue program. A
-    Component can be thought of as a function from 'model to 'result, but
-    (typically) through interaction with the 'result, 'actions can be issued
-    which can modify the 'model. The typical way that a Ue program is built
-    is by factoring small pieces of an application into Components, and then
-    combining them with the Combinators, or Let_syntax, forming bigger and
-    bigger Components. At the end, one large Component makes up the whole
+(** The Component is the building-block of a Ue program. A Component can be
+    thought of as a function from 'model to 'result, but (typically) through
+    interaction with the 'result, 'actions can be issued which can modify
+    the 'model. The typical way that a Ue program is built is by factoring
+    small pieces of an application into Components, and then combining them
+    with the Combinators, or Let_syntax, forming bigger and bigger
+    Components. At the end, one large Component makes up the whole
     applicaiton. *)
 
 type ('result, 'action, 'model) t
@@ -17,10 +17,6 @@ val constant : 'result -> ('result, Nothing.t, _) t
 val of_arrow : f:('model -> 'result) -> ('result, Nothing.t, 'model) t
 (** Returns a component with no action, and where the result is computed by
     applying [f] to the model. *)
-
-val of_incremental_arrow :
-  f:('model Incr.t -> 'result Incr.t) -> ('result, Nothing.t, 'model) t
-(** Same as of_arrow, but allows the user to optimize using Incremental. *)
 
 val of_subcomponent :
      field:('outer_model, 'inner_model) Field.t
@@ -37,7 +33,7 @@ val of_functions :
                    -> 'model
                    -> 'action
                    -> 'model)
-  -> compute :(inject:('action -> Event.t) -> 'model -> 'result)
+  -> compute:(inject:('action -> Event.t) -> 'model -> 'result)
   -> ('result, 'action, 'model) t
 (** Creates a component directly from the callbacks that are used in the
     component lifecycle. *)
@@ -88,11 +84,6 @@ val of_module :
 (** Creates a component from a Module_component instance. *)
 
 module Combinator : sig
-  val fix :
-       (('result, 'action, 'model) t -> ('result, 'action, 'model) t)
-    -> ('result, 'action, 'model) t
-  (** DO NOT USE *)
-
   val assoc :
        ('result, 'action, 'model) t
     -> comparator:('k, 'cmp) Map.comparator
@@ -155,6 +146,28 @@ module Same_model : sig
     -> ('r1 * 'r2, ('a1, 'a2) Either.t, 'm) t
 end
 
+module Incremental : sig
+  val of_arrow :
+    f:('model Incr.t -> 'result Incr.t) -> ('result, Nothing.t, 'model) t
+  (** Same as of_arrow, but allows the user to optimize using Incremental. *)
+
+  val of_subcomponent :
+       field:('outer_model, 'inner_model) Field.t
+    -> f:('outer_model Incr.t -> ('result, 'action, 'inner_model) t)
+    -> ('result, 'action, 'outer_model) t
+
+  val of_functions :
+       apply_action:(   'model Incr.t
+                     -> (   schedule_action:('action -> unit)
+                         -> 'action
+                         -> 'model)
+                        Incr.t)
+    -> compute:(   inject:('action -> Event.t)
+                -> 'model Incr.t
+                -> 'result Incr.t)
+    -> ('result, 'action, 'model) t
+end
+
 module Expert : sig
   val of_full :
        f:(   old_model:'model option Incr.t
@@ -164,8 +177,7 @@ module Expert : sig
     -> ('result, 'action, 'model) t
   (** AH YES. The full power of the Incr_dom "Component" system.
 
-      Gaze ye not into the abyss lest ye become known as an abyss domain
-      expert. *)
+      Gaze ye not into the abyss lest ye be known as an abyss domain expert. *)
 
   val eval :
        old_model:'model option Incr.t
@@ -173,5 +185,7 @@ module Expert : sig
     -> inject:('action -> Event.t)
     -> ('result, 'action, 'model) t
     -> ('result, 'action, 'model) Snapshot.t Incr.t
-  (** Do you like GADT's? I do. That's why this function is called [eval]. *)
+  (** Do you like GADT's? I do. That's why this function is called [eval],
+      and not called something that is more informative. Gotta keep those
+      traditions alive somehow. *)
 end
