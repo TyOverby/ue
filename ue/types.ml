@@ -1,5 +1,8 @@
 open! Core_kernel
 
+(* These types here are merely to help me organize the code 
+ * in [component.ml].  None are exported. *)
+
 module Arrow = struct
   type ('result, 'model) incremental = 'model Incr.t -> 'result Incr.t
 

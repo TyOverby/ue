@@ -121,7 +121,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
       and apply_action = r.apply_action model in
       Snapshot.create ~result ~apply_action
   | Subcomponent_incr (f, field) ->
-      let component = f model in
+      let component = optimize (f model) in
       let model_downwards = Incr.map model ~f:(Field.get field) in
       let old_model_downwards =
         Incr.map old_model ~f:(Option.map ~f:(Field.get field))
@@ -222,7 +222,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
       Snapshot.create ~result ~apply_action
 
 (* HEY ZANDER CHECK THIS SHIT OUT *)
-let rec optimize : type r a m. (r, a, m) optimize_type = function
+and optimize : type r a m. (r, a, m) optimize_type = function
   | Map (c, f) -> (
     match optimize c with
     | Constant r -> Constant (f r)
