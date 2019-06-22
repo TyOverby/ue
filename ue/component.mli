@@ -20,7 +20,7 @@ val of_arrow : f:('model -> 'result) -> ('result, Nothing.t, 'model) t
 
 val of_subcomponent :
      field:('outer_model, 'inner_model) Field.t
-  -> f:('outer_model -> ('result, 'action, 'inner_model) t)
+  -> ('result, 'action, 'inner_model) t
   -> ('result, 'action, 'outer_model) t
 (** Creates components whose constructors require parameters from an outer
     component, and whose model is a field of that outer components model.

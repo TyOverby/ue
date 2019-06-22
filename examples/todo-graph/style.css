@@ -1,0 +1,20 @@
+body {
+    font-family:sans-serif;
+}
+
+.wrapper > .title {
+  font-size: 35px;
+  margin-bottom: 0.5em;
+}
+
+.todo-list-item > .title {
+  font-size: 25px;
+}
+
+.list-container > .todo-list-item {
+    padding: 5px;
+}
+
+.list-container > div:nth-child(odd) {
+    background:rgba(0,0,0, 0.1);
+}

@@ -1,0 +1,16 @@
+(executable
+ (name todo_graph)
+ (libraries ue ue_web)
+ (js_of_ocaml
+  (flags
+   (:standard --setenv FORCE_DROP_INLINE_TEST=true)))
+ (preprocess
+  (pps ppx_jane)))
+
+(alias
+ (name default)
+ (deps 
+   style.css
+   layout.css
+   todo_graph.bc.js 
+   index.html))

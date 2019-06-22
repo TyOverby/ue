@@ -10,7 +10,7 @@ type ('result, 'action, 'model) t =
       ('result, 'model) Arrow.non_incremental
       -> ('result, Nothing.t, 'model) t
   | Subcomponent :
-      ('outer_model -> ('result, 'action, 'inner_model) t)
+      (('result, 'action, 'inner_model) t)
       * ('outer_model, 'inner_model) Field.t
       -> ('result, 'action, 'outer_model) t
   | Module :
@@ -138,8 +138,8 @@ let rec eval : type r a m. (r, a, m) eval_type =
         Field.fset field model inner_model
       in
       Snapshot.create ~result ~apply_action
-  | Subcomponent (f, field) ->
-      let%bind component = Incr.map model ~f in
+  | Subcomponent (t, field) ->
+      let component = t in
       let model_downwards = Incr.map model ~f:(Field.get field) in
       let old_model_downwards =
         Incr.map old_model ~f:(Option.map ~f:(Field.get field))
@@ -254,7 +254,7 @@ let of_module m = Module m
 
 let of_functions ~apply_action ~compute = Function {apply_action; compute}
 
-let of_subcomponent ~field ~f = Subcomponent (f, field)
+let of_subcomponent ~field t = Subcomponent (t, field)
 
 let map t ~f = Map (t, f)
 
