@@ -11,8 +11,18 @@ open! Core_kernel
 
 type ('result, 'action, 'model) t
 
+type erased_action
+
 val constant : 'result -> ('result, Nothing.t, _) t
 (** Returns a component with no action or model, only a constant result. *)
+
+val erase_action :
+  ('result, 'action, 'model) t -> ('result, erased_action, 'model) t
+
+val erase_action_with :
+     ('result, 'action, 'model) t
+  -> 'action Type_equal.Id.t
+  -> ('result, erased_action, 'model) t
 
 val of_arrow : f:('model -> 'result) -> ('result, Nothing.t, 'model) t
 (** Returns a component with no action, and where the result is computed by

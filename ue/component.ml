@@ -3,6 +3,11 @@ open Incr.Let_syntax
 open Types
 module Module_component = Module_component
 
+type 'a witnessed_action =
+  {action: 'a; witness: 'a Core_kernel.Type_equal.Id.t}
+
+type erased_action = Erased : _ witnessed_action -> erased_action
+
 type ('result, 'action, 'model) t =
   (* Non-incremental Constructors *)
   | Constant : 'result -> ('result, Nothing.t, _) t
@@ -10,13 +15,18 @@ type ('result, 'action, 'model) t =
       ('result, 'model) Arrow.non_incremental
       -> ('result, Nothing.t, 'model) t
   | Subcomponent :
-      (('result, 'action, 'inner_model) t)
+      ('result, 'action, 'inner_model) t
       * ('outer_model, 'inner_model) Field.t
       -> ('result, 'action, 'outer_model) t
   | Module :
       ('result, 'action, 'model) Module_component.t
       -> ('result, 'action, 'model) t
-  | Function : ('r, 'a, 'm) Record.non_incremental -> ('r, 'a, 'm) t
+  | Function :
+      ('result, 'action, 'model) Record.non_incremental
+      -> ('result, 'action, 'model) t
+  | Erased_action :
+      ('result, 'action, 'model) t * 'action Type_equal.Id.t
+      -> ('result, erased_action, 'model) t
   (* Incremental Constructors *)
   | Arrow_incr :
       ('result, 'model) Arrow.incremental
@@ -156,6 +166,23 @@ let rec eval : type r a m. (r, a, m) eval_type =
         Field.fset field model inner_model
       in
       Snapshot.create ~result ~apply_action
+  | Erased_action (t, witness) ->
+      let snapshot_incr =
+        eval t ~old_model ~model ~inject:(fun action ->
+            inject (Erased {action; witness}) )
+      in
+      let%map snapshot = snapshot_incr and model = model in
+      let apply_action ~schedule_action (Erased a) =
+        match Type_equal.Id.same_witness a.witness witness with
+        | Some T ->
+            Snapshot.apply_action snapshot
+              ~schedule_action:(fun action ->
+                schedule_action (Erased {action; witness}) )
+              a.action
+        | None -> model
+      in
+      let result = Snapshot.result snapshot in
+      Snapshot.create ~result ~apply_action
   | Map (t, f) ->
       let%map snapshot = eval ~old_model ~model ~inject t in
       Snapshot.create
@@ -257,6 +284,15 @@ let of_functions ~apply_action ~compute = Function {apply_action; compute}
 let of_subcomponent ~field t = Subcomponent (t, field)
 
 let map t ~f = Map (t, f)
+
+let erase_action t =
+  let id =
+    Type_equal.Id.create ~name:"erased action" (fun _ ->
+        Sexp.Atom "erased action" )
+  in
+  Erased_action (t, id)
+
+let erase_action_with t id = Erased_action (t, id)
 
 module Combinator = struct
   let assoc t ~comparator =

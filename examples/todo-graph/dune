@@ -9,8 +9,4 @@
 
 (alias
  (name default)
- (deps 
-   style.css
-   layout.css
-   todo_graph.bc.js 
-   index.html))
+ (deps style.css layout.css todo_graph.bc.js index.html))
