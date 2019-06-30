@@ -1,4 +1,3 @@
-open! Core_kernel
 open! Import
 open Js_abstractions
 module J = Js_of_ocaml

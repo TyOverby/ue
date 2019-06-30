@@ -9,8 +9,8 @@ let list_item_component = Component.of_arrow ~f:(fun todo ->
     let class_name = Vdom.Attr.class_name in 
     let name = Vdom.Node.div
       ~attrs: [| class_name "title" |] 
-      [| Vdom.Node.span_text (name todo) |]   in
-    let description = (description todo) with 
+      [| Vdom.Node.span_text (name todo) |] in
+    let description = match description todo with
     | Some description -> Vdom.Node.div [| Vdom.Node.span_text description |]   
     | None -> Vdom.Node.div [||] 
     in

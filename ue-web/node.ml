@@ -1,4 +1,3 @@
-open! Import
 open! Core_kernel
 module V = Virtual_dom.Vdom
 
