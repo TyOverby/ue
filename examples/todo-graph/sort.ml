@@ -28,7 +28,7 @@ module Sorted_by = struct
     ;;
 
     let sexp_of_t t =
-      let base_sexped = t.sexp_of_base t.base in
+      let base_sexped = Type_equal.Id.to_sexp t.typeid t.base in
       let all = List.map t.priority ~f:Sort.sexp_of_t in
       Sexp.List (List.append all [ base_sexped ])
     ;;
@@ -54,12 +54,9 @@ module Sorted_by = struct
   include T
 end
 
+module Sort_key = Sorted_by.Cmpr
+
 let rekey input output_comparator ~f =
-  let open Incr.Let_syntax in
-  let%bind input_comparator =
-    let%map input = input in
-    Map.comparator input
-  in
   let init = Map.empty output_comparator in
   Incr.Map.unordered_fold
     input
@@ -72,16 +69,18 @@ let rekey input output_comparator ~f =
       Map.remove acc key)
 ;;
 
-type ('k, 'v, 'cmp, 'cmp2) sort_type =
-  ('k, 'v, 'cmp) Map.t Incr.t -> ('k Sorted_by.t, 'v, 'cmp2) Map.t Incr.t
-
-let sort (type k v cmp) : (k, v, cmp, _) sort_type =
- fun input ->
+let sort input ~f ~ordering =
   let open Incr.Let_syntax in
-  let%bind cmp = input >>| Map.comparator in
+  let%bind cmp = input >>| Map.comparator
+  and f = f
+  and ordering = ordering in
   let compare = cmp.compare in
   let sexp_of_base = cmp.sexp_of_t in
   let typeid = Type_equal.Id.create ~name:"id" sexp_of_base in
-  let key_transform ~key ~data:_ = Sorted_by.make key ~compare ~sexp_of_base ~typeid in
+  let key_transform ~key ~data =
+    let base = Sorted_by.make key ~compare ~sexp_of_base ~typeid in
+    let priority = List.map ordering ~f:(Fn.flip f data) in
+    Sorted_by.Cmpr.Hide { base with priority }
+  in
   rekey input (module Sorted_by.Cmpr) ~f:key_transform
 ;;
