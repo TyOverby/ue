@@ -49,7 +49,7 @@ let counters_component =
   of_module (module Counter_component)
   |> Combinator.assoc ~comparator:(module Int)
   |> map ~f:(fun result_map ->
-         Vdom.Node.div (List.to_array (Map.data result_map)) )
+         Vdom.Node.div (List.to_array (Map.data result_map)))
 
 let add_counter_component =
   Component.of_module (module Add_counter_component)

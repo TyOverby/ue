@@ -104,4 +104,4 @@ let create (type r a m) (inner_component : (r, a, m) Ue.Component.t) :
         print_endline "applying action" ;
         apply_action ~schedule_action a
       in
-      Snapshot.create ~result ~apply_action )
+      Snapshot.create ~result ~apply_action)

@@ -28,7 +28,7 @@ module Define (Handler : Handler) :
     Hashtbl.add_exn handlers ~key ~data:(fun inp ->
         match inp with
         | C value -> Handler.handle value
-        | _ -> raise_s [%message "Unrecognized variant"] )
+        | _ -> raise_s [%message "Unrecognized variant"])
 
   let inject v = C v
 end

@@ -57,7 +57,7 @@ let traverse tree ~f =
           List.foldi all ~init:([], y) ~f:(fun i (res, cur_y) child ->
               let cursor = List.append cursor [i] in
               let ret, y = traverse_impl child ~cursor ~f ~x ~y:cur_y in
-              (ret :: res, y) )
+              (ret :: res, y))
         in
         (f ~data:value ~cursor ~x ~y ~children:ret, y)
   in

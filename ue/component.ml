@@ -109,7 +109,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
   | Constant result ->
       Incr.const
         (Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->
-             Nothing.unreachable_code ))
+             Nothing.unreachable_code))
   | Arrow f ->
       let%map model = model in
       Snapshot.create ~result:(f model)
@@ -117,7 +117,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
   | Arrow_incr f ->
       let%map result = f model in
       Snapshot.create ~result ~apply_action:(fun ~schedule_action:_ ->
-          Nothing.unreachable_code )
+          Nothing.unreachable_code)
   | Full f -> f ~old_model ~model ~inject
   | Function r ->
       let%map model = model in
@@ -169,7 +169,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
   | Erased_action (t, witness) ->
       let snapshot_incr =
         eval t ~old_model ~model ~inject:(fun action ->
-            inject (Erased {action; witness}) )
+            inject (Erased {action; witness}))
       in
       let%map snapshot = snapshot_incr and model = model in
       let apply_action ~schedule_action (Erased a) =
@@ -177,7 +177,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
         | Some T ->
             Snapshot.apply_action snapshot
               ~schedule_action:(fun action ->
-                schedule_action (Erased {action; witness}) )
+                schedule_action (Erased {action; witness}))
               a.action
         | None -> model
       in
@@ -189,8 +189,7 @@ let rec eval : type r a m. (r, a, m) eval_type =
         ~result:(f (Snapshot.result snapshot))
         ~apply_action:(Snapshot.apply_action snapshot)
   | Module module_test ->
-      let module M = ( val module_test
-                         : Module_component.S
+      let module M = ( val module_test : Module_component.S
                          with type result = r
                           and type action = a
                           and type model = m )
@@ -211,13 +210,14 @@ let rec eval : type r a m. (r, a, m) eval_type =
       let old_model =
         Incr.map old_model ~f:(function
           | Some m -> m
-          | None -> Map.empty comparator )
+          | None -> Map.empty comparator)
       in
       let model_and_old_model_map =
-        Incr.Map.merge model old_model ~f:(fun ~key:_ -> function
+        Incr.Map.merge model old_model ~f:(fun ~key:_ ->
+          function
           | `Left model -> Some (model, None)
           | `Right _ -> None
-          | `Both (model, old_model) -> Some (model, Some old_model) )
+          | `Both (model, old_model) -> Some (model, Some old_model))
       in
       let snapshot_map =
         Incr.Map.mapi' model_and_old_model_map
@@ -225,16 +225,16 @@ let rec eval : type r a m. (r, a, m) eval_type =
             let model = Incr.map model_and_old_model ~f:Tuple2.get1 in
             let old_model = Incr.map model_and_old_model ~f:Tuple2.get2 in
             let inject action = inject (key, action) in
-            eval ~old_model ~model ~inject t )
+            eval ~old_model ~model ~inject t)
       in
       let results_map =
         Incr.Map.mapi snapshot_map ~f:(fun ~key:_ ~data:snapshot ->
-            Snapshot.result snapshot )
+            Snapshot.result snapshot)
       in
       let apply_action =
         let%map action_map =
           Incr.Map.mapi snapshot_map ~f:(fun ~key:_ ~data ->
-              Snapshot.apply_action data )
+              Snapshot.apply_action data)
         and model = model in
         fun ~schedule_action action ->
           let id, action = action in
@@ -288,7 +288,7 @@ let map t ~f = Map (t, f)
 let erase_action t =
   let id =
     Type_equal.Id.create ~name:"erased action" (fun _ ->
-        Sexp.Atom "erased action" )
+        Sexp.Atom "erased action")
   in
   Erased_action (t, id)
 

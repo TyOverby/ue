@@ -64,7 +64,7 @@ module Schedule_once = struct
       let cb =
         Js.wrap_callback (fun _ ->
             f () ;
-            t := false )
+            t := false)
       in
       let result = Dom_html.window##requestAnimationFrame cb in
       ignore result

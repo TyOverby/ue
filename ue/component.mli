@@ -61,8 +61,8 @@ module Module_component : sig
       Module_component.S is intended to be used with the
       [Component.of_module] function. *)
   module type S = sig
-    (**  *)
     type model
+    (**  *)
 
     type action
 
