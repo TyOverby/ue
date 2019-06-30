@@ -1,5 +1,4 @@
 open! Core_kernel
-
 module Incr = Incremental.Make ()
 
 let clock = Incr.Clock.create ~start:(Time_ns.now ()) ()

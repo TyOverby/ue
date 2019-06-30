@@ -5,17 +5,17 @@
 
 type ('result, 'action, 'model) t
 
-val apply_action :
-     ('result, 'action, 'model) t
+(** Extracts the apply_action callback from the Snapshot. *)
+val apply_action
+  :  ('result, 'action, 'model) t
   -> schedule_action:('action -> unit)
   -> 'action
   -> 'model
-(** Extracts the apply_action callback from the Snapshot. *)
 
-val result : ('result, 'action, 'model) t -> 'result
 (** Extracts the result from the Snapshot. *)
+val result : ('result, 'action, 'model) t -> 'result
 
-val create :
-     result:'result
+val create
+  :  result:'result
   -> apply_action:(schedule_action:('action -> unit) -> 'action -> 'model)
   -> ('result, 'action, 'model) t

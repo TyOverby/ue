@@ -15,6 +15,6 @@ end
 
 val wrap_model : 'm -> 'm Model.t
 
-val create :
-     ('r, 'a, 'm) Ue.Component.t
+val create
+  :  ('r, 'a, 'm) Ue.Component.t
   -> ('r * Result.t, 'a Action.t, 'm Model.t) Ue.Component.t

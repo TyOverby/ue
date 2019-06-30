@@ -2,18 +2,15 @@ open Base
 include Event_intf
 
 type t = ..
-
 type t += Nop | All of t list
 
-let handlers : (t -> unit) Hashtbl.M(Int).t =
-  Hashtbl.create (module Int) ~size:8
+let handlers : (t -> unit) Hashtbl.M(Int).t = Hashtbl.create (module Int) ~size:8
 
 module Obj = struct
   module Extension_constructor = struct
     [@@@ocaml.warning "-3"]
 
     let id = Caml.Obj.extension_id
-
     let of_val = Caml.Obj.extension_constructor
   end
 end
@@ -29,13 +26,12 @@ module Define (Handler : Handler) :
         match inp with
         | C value -> Handler.handle value
         | _ -> raise_s [%message "Unrecognized variant"])
+  ;;
 
   let inject v = C v
 end
 
-let get_key t =
-  Obj.Extension_constructor.id (Obj.Extension_constructor.of_val t)
-
+let get_key t = Obj.Extension_constructor.id (Obj.Extension_constructor.of_val t)
 let handle_registered_event t = Hashtbl.find_exn handlers (get_key t) t
 
 module Expert = struct
@@ -44,4 +40,5 @@ module Expert = struct
     | Nop -> ()
     | All l -> List.iter ~f:handle l
     | t -> handle_registered_event t
+  ;;
 end
